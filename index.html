@@ -1,3 +1,8 @@
+bash
+
+cat /home/claude/index.html
+Output
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -472,6 +477,7 @@ body{background:var(--bg);color:var(--text);font-family:"DM Mono",monospace;min-
   <div class="footer-links">
     <a class="footer-btn primary" href="https://calendar.google.com" target="_blank">Google Calendar &#8599;</a>
     <a class="footer-btn" href="https://app.trainingpeaks.com" target="_blank">TrainingPeaks &#8599;</a>
+    <button class="footer-btn" onclick="exportData()">Export My Data &#8595;</button>
   </div>
 
 </div>
@@ -535,6 +541,44 @@ let currentWeek=1;
 function key(w){return"ab_w"+w;}
 function load(w){try{return JSON.parse(localStorage.getItem(key(w))||"{}");}catch(e){return{};}}
 function save(w,d){try{localStorage.setItem(key(w),JSON.stringify(d));}catch(e){}}
+
+function csvEscape(v){
+  v=(v===undefined||v===null)?"":String(v);
+  if(/[",\n\r]/.test(v)){v='"'+v.replace(/"/g,'""')+'"';}
+  return v;
+}
+function exportData(){
+  const headers=["Week","Start Date","End Date","Tue Swim Done","Wed Upper Strength Done","Thu CrossFit Done","Sat Run Done","Sun Lower Strength Done","QL Status","Swolf","Run (km)","Squat (kg)","Press (kg)","Week Notes"];
+  const rows=[headers];
+  for(let w=1;w<=12;w++){
+    const data=load(w);
+    const ws=weekStart(w);const we=new Date(ws);we.setDate(we.getDate()+6);
+    rows.push([
+      w,
+      fmt(ws)+" 2026",
+      fmt(we)+" 2026",
+      data["done_1"]?"Yes":"No",
+      data["done_2"]?"Yes":"No",
+      data["done_3"]?"Yes":"No",
+      data["done_5"]?"Yes":"No",
+      data["done_6"]?"Yes":"No",
+      data.ql||"",
+      data.swolf||"",
+      data.run||"",
+      data.squat||"",
+      data.press||"",
+      data.notes||""
+    ]);
+  }
+  const csv=rows.map(r=>r.map(csvEscape).join(",")).join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="aaron-bell-training-log-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 function weekStart(w){const d=new Date(START_DATE);d.setDate(d.getDate()+(w-1)*7);return d;}
 function fmt(d){return d.getDate()+" "+MONTHS[d.getMonth()];}
 function isToday(w,off){const t=new Date();const d=new Date(weekStart(w));d.setDate(d.getDate()+off);return d.toDateString()===t.toDateString();}
@@ -741,3 +785,10 @@ render();
 </script>
 </body>
 </html>
+Done
+That should now be sitting in a copyable code block above — tap the copy icon in its top corner, then paste it into the GitHub web editor over your existing index.html and commit.
+
+One quick gut-check before you do: paste it into GitHub and load the live page once to confirm the "Export My Data" button shows up next to TrainingPeaks before you walk away from it.
+
+
+
